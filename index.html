@@ -16,7 +16,32 @@
     <style>
         .hidden { display: none; }
         body { transition: background-color 0.3s, color 0.3s; }
+        /* === POCZĄTEK STYLI DO ANIMACJI === */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  /* Używamy zdefiniowanej animacji */
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Klasa pomocnicza do ukrywania elementów przed animacją */
+.opacity-0 {
+    opacity: 0;
+}
+
+/* === KONIEC STYLI DO ANIMACJI === */
     </style>
+    
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
 
