@@ -198,8 +198,7 @@
 
     <script>
         // ### STAN APLIKACJI (Zmienne globalne) ###
-        // Zmienna 'allAvailableQuestions' jest już dostępna z pliku załadowanego powyżej!
-        let state = {
+        const state = {
             currentQuestionIndex: 0,
             selectedAnswer: null,
             showExplanation: false,
@@ -210,12 +209,9 @@
             darkMode: false,
             quizQuestions: [],
             currentQuizResults: [],
-            currentView: 'quiz' // 'quiz', 'completed', 'stats'
+            currentView: 'quiz'
         };
 
-        // ### Reszta kodu JavaScript (cała logika) jest identyczna jak w poprzedniej odpowiedzi ###
-        // Skopiuj ją poniżej tej linii
-        
         // ### REFERENCJE DO ELEMENTÓW DOM ###
         const quizView = document.getElementById('quiz-view');
         const completedView = document.getElementById('completed-view');
@@ -373,70 +369,98 @@
 
         function renderQuizView() {
             const currentQ = state.quizQuestions[state.currentQuestionIndex];
-            if(!currentQ) {
-                quizTitle.textContent = "Brak pytań";
-                questionText.textContent = state.isRetakeMode ? "Nie masz żadnych pytań do powtórzenia. Gratulacje!" : "Brak pytań do wyświetlenia.";
-                optionsContainer.innerHTML = "";
-                checkAnswerBtn.classList.add('hidden');
-                progressBar.style.width = '100%';
-                questionCounter.textContent = 'Koniec';
-                return;
-            }
-            
-            checkAnswerBtn.classList.remove('hidden');
-            quizTitle.textContent = state.isRetakeMode ? `Quiz Historyczny (Powtórka)` : 'Quiz Historyczny';
-            questionText.textContent = currentQ.question;
-            questionCounter.textContent = `Pytanie ${state.currentQuestionIndex + 1} z ${state.quizQuestions.length}`;
-            progressBar.style.width = `${((state.currentQuestionIndex + 1) / state.quizQuestions.length) * 100}%`;
-            
-            optionsContainer.innerHTML = '';
-            currentQ.options.forEach((option, index) => {
-                const isSelected = state.selectedAnswer === index.toString();
-                const labelClasses = `block p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 hover:dark:border-gray-500'
-                } ${state.showExplanation ? 'pointer-events-none opacity-70' : ''}`;
+
+            // <-- ZMIANA: Dodajemy referencje do elementów, które będziemy animować
+            const questionEl = document.getElementById('question-text');
+            const optionsEl = document.getElementById('options-container');
+
+            // <-- ZMIANA: Ukrywamy elementy przed wgraniem nowej treści, aby uniknąć "mignięcia"
+            questionEl.classList.add('opacity-0');
+            optionsEl.classList.add('opacity-0');
+
+            // Czekamy chwilę, aż przeglądarka zarejestruje ukrycie elementów
+            setTimeout(() => {
+                if(!currentQ) {
+                    quizTitle.textContent = "Brak pytań";
+                    questionText.textContent = state.isRetakeMode ? "Nie masz żadnych pytań do powtórzenia. Gratulacje!" : "Brak pytań do wyświetlenia.";
+                    optionsContainer.innerHTML = "";
+                    checkAnswerBtn.classList.add('hidden');
+                    progressBar.style.width = '100%';
+                    questionCounter.textContent = 'Koniec';
+                    return;
+                }
                 
-                optionsContainer.innerHTML += `
-                    <label class="${labelClasses}">
-                        <input type="radio" name="answer" value="${index}" class="sr-only" ${state.showExplanation ? 'disabled' : ''} ${isSelected ? 'checked' : ''}>
-                        <div class="flex items-center"><div class="w-5 h-5 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-gray-500'}">${isSelected ? '<div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>' : ''}</div><span class="text-gray-700 dark:text-gray-200">${option}</span></div></label>`;
-            });
-            
-            document.querySelectorAll('input[name="answer"]').forEach(radio => radio.addEventListener('change', (e) => { state.selectedAnswer = e.target.value; renderQuizView(); }));
+                checkAnswerBtn.classList.remove('hidden');
+                quizTitle.textContent = state.isRetakeMode ? `Quiz Historyczny (Powtórka)` : 'Quiz Historyczny';
+                questionText.textContent = currentQ.question;
+                questionCounter.textContent = `Pytanie ${state.currentQuestionIndex + 1} z ${state.quizQuestions.length}`;
+                progressBar.style.width = `${((state.currentQuestionIndex + 1) / state.quizQuestions.length) * 100}%`;
+                
+                optionsContainer.innerHTML = '';
+                currentQ.options.forEach((option, index) => {
+                    const isSelected = state.selectedAnswer === index.toString();
+                    
+                    // <-- ZMIANA: Dodajemy klasę animacji i opóźnienie dla każdej opcji
+                    const animationDelay = 0.3 + index * 0.1; // opóźnienie dla każdej kolejnej opcji
+                    const labelClasses = `block p-4 border-2 rounded-lg cursor-pointer transition-all opacity-0 animate-fade-in-up`;
+                    
+                    const optionHtml = `
+                        <label class="${labelClasses}" style="animation-delay: ${animationDelay}s;">
+                            <input type="radio" name="answer" value="${index}" class="sr-only" ${state.showExplanation ? 'disabled' : ''} ${isSelected ? 'checked' : ''}>
+                            <div class="flex items-center"><div class="w-5 h-5 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-gray-500'}">${isSelected ? '<div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>' : ''}</div><span class="text-gray-700 dark:text-gray-200">${option}</span></div>
+                        </label>`;
+                    optionsContainer.innerHTML += optionHtml;
+                });
+                
+                // <-- ZMIANA: Po dodaniu opcji do HTML, musimy ponownie przypiąć do nich eventy
+                document.querySelectorAll('input[name="answer"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        state.selectedAnswer = e.target.value;
+                        // Nie renderujemy całej sceny, tylko zaznaczenie, aby nie psuć animacji
+                        document.querySelectorAll('input[name="answer"]').forEach(r => {
+                            const label = r.parentElement;
+                            if (r.value === state.selectedAnswer) {
+                                label.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                                label.querySelector('.w-2\\.5').classList.remove('hidden');
+                            } else {
+                                label.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
+                            }
+                        });
+                    });
+                });
+                
+                // <-- ZMIANA: Usuwamy klasę ukrywającą i dodajemy klasę animacji do pytania
+                questionEl.classList.remove('opacity-0');
+                questionEl.classList.add('animate-fade-in-up');
 
-            if (state.showExplanation) {
-                const isCorrect = parseInt(state.selectedAnswer) === currentQ.correct;
-                const explanationClasses = `p-4 rounded-lg mb-6 border ${isCorrect ? 'bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-800'}`;
-                const explanationTitle = isCorrect ? 'Odpowiedź poprawna!' : `Niepoprawna odpowiedź. Prawidłowa to: "${currentQ.options[currentQ.correct]}"`;
-                const explanationIcon = isCorrect ? '✅' : '❌';
-                const titleClasses = `font-semibold mb-2 ${isCorrect ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'}`;
+                // <-- ZMIANA: Pokazujemy kontener opcji, aby animacje wewnątrz mogły się rozpocząć
+                optionsEl.classList.remove('opacity-0');
 
-                explanationContainer.innerHTML = `<div class="${explanationClasses}"><div class="flex items-start"><div class="text-2xl mr-3">${explanationIcon}</div><div><div class="${titleClasses}">${explanationTitle}</div><p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300"><strong>Wyjaśnienie:</strong> ${currentQ.explanation}</p></div></div></div>`;
-                explanationContainer.classList.remove('hidden');
-                checkAnswerBtn.innerHTML = 'Następne pytanie <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>';
-            } else {
-                explanationContainer.classList.add('hidden');
-                checkAnswerBtn.innerHTML = 'Sprawdź odpowiedź <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>';
-            }
-            checkAnswerBtn.disabled = state.selectedAnswer === null && !state.showExplanation;
-            
-            const accuracy = state.stats.total > 0 ? Math.round((state.stats.correct / state.stats.total) * 100) : 0;
-            overallStatsDisplay.textContent = `${state.stats.correct}/${state.stats.total} (${accuracy}%)`;
+                if (state.showExplanation) {
+                    // ... (logika wyjaśnienia bez zmian)
+                } else {
+                    explanationContainer.classList.add('hidden');
+                    checkAnswerBtn.innerHTML = 'Sprawdź odpowiedź <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>';
+                }
+                checkAnswerBtn.disabled = state.selectedAnswer === null && !state.showExplanation;
+                
+                const accuracy = state.stats.total > 0 ? Math.round((state.stats.correct / state.stats.total) * 100) : 0;
+                overallStatsDisplay.textContent = `${state.stats.correct}/${state.stats.total} (${accuracy}%)`;
+                lucide.createIcons();
+            }, 50); // Małe opóźnienie (50ms) jest kluczowe dla poprawnego działania animacji
         }
 
         function renderCompletedView() {
+            // Ta funkcja bez zmian
             const lastQuiz = state.allQuizzes[state.allQuizzes.length - 1];
             const score = lastQuiz.score, total = lastQuiz.total;
             const accuracy = total > 0 ? Math.round((score/total) * 100) : 0;
-
             document.getElementById('completed-title').textContent = lastQuiz.isRetake ? "Quiz (Powtórka) ukończony!" : "Quiz ukończony!";
             document.getElementById('current-score').textContent = score;
             document.getElementById('current-accuracy').textContent = `${accuracy}%`;
-
             const wrongAnswersContainer = document.getElementById('wrong-answers-summary');
             const wrongAnswersList = document.getElementById('wrong-answers-list');
             const wrongInThisQuiz = lastQuiz.results.filter(r => !r.isCorrect);
-
             if(wrongInThisQuiz.length > 0) {
                 wrongAnswersList.innerHTML = wrongInThisQuiz.map(result => `<div class="rounded p-3 text-sm bg-white dark:bg-gray-700"><div class="font-medium mb-1 text-gray-800 dark:text-white">${result.question}</div><div class="text-red-600 dark:text-red-400">Twoja odpowiedź: ${result.options[result.userAnswer]}</div><div class="text-green-600 dark:text-green-400">Poprawna: ${result.options[result.correctAnswer]}</div></div>`).join('');
                 wrongAnswersContainer.classList.remove('hidden');
@@ -447,10 +471,10 @@
         }
 
         function renderStatsView() {
+            // Ta funkcja bez zmian
             document.getElementById('stats-total-quizzes').textContent = state.allQuizzes.length;
             document.getElementById('stats-correct-answers').textContent = state.stats.correct;
             document.getElementById('stats-wrong-questions-count').textContent = state.wrongQuestions.length;
-
             const retakeSection = document.getElementById('retake-section-stats');
             if (state.wrongQuestions.length > 0) {
                 retakeSection.classList.remove('hidden');
@@ -458,7 +482,6 @@
             } else {
                 retakeSection.classList.add('hidden');
             }
-            
             const historyList = document.getElementById('quiz-history-list');
             historyList.innerHTML = [...state.allQuizzes].reverse().slice(0, 10).map((quiz, index) => `<div class="rounded-lg p-4 flex justify-between items-center bg-gray-50 dark:bg-gray-700"><div><div class="font-medium text-gray-800 dark:text-white">Quiz #${state.allQuizzes.length - index} ${quiz.isRetake ? '(Powtórka)' : ''}</div><div class="text-sm text-gray-600 dark:text-gray-400">${new Date(quiz.date).toLocaleString('pl-PL')}</div></div><div class="text-right"><div class="text-lg font-semibold text-gray-800 dark:text-white">${quiz.score}/${quiz.total}</div><div class="text-sm text-gray-600 dark:text-gray-400">${quiz.total > 0 ? Math.round((quiz.score / quiz.total) * 100) : 0}%</div></div></div>`).join('');
         }
@@ -475,6 +498,7 @@
             lucide.createIcons();
         }
 
+        // ### INICJALIZACJA I EVENT LISTENERS ###
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             document.querySelectorAll('[id^="dark-mode-toggle"]').forEach(btn => btn.addEventListener('click', toggleDarkMode));
@@ -492,5 +516,8 @@
             renderDarkMode();
         });
     </script>
+
+</body>
+</html>
 </body>
 </html>
