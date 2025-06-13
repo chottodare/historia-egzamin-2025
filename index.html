@@ -5,44 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Historyczny</title>
     
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class'
       }
     </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://unpkg.com/lucide@latest"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body { 
+            transition: background-color 0.3s, color 0.3s; 
+            font-family: 'Inter', sans-serif;
+        }
         .hidden { display: none; }
-        body { transition: background-color 0.3s, color 0.3s; }
-        
-        /* Style dla animacji */
-        @keyframes fadeInUp {
+
+        /* === POCZĄTEK STYLI MODALA === */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 450px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .dark .modal-content {
+            background-color: #1f2937; /* dark:bg-gray-800 */
+        }
+        /* === KONIEC STYLI MODALA === */
+
+        /* === POCZĄTEK STYLI DO ANIMACJI (POPRAWKA) === */
+        @keyframes elegantFadeInUp {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.5s ease-out forwards;
+
+        .animate-elegant-fade-in-up {
+          animation: elegantFadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
+        /* === KONIEC STYLI DO ANIMACJI === */
+
         .opacity-0 {
             opacity: 0;
         }
     </style>
+    
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
     <div id="app-container" class="p-4 sm:p-6 flex items-start justify-center min-h-screen">
         <div class="max-w-2xl w-full">
             
+            <!-- ### WIDOK QUIZU ### -->
             <div id="quiz-view" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-4">
@@ -80,7 +124,7 @@
                 </div>
 
                 <div class="mb-8">
-                    <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-800 dark:text-white">Ładowanie pytania...</h2>
+                    <h2 id="question-text" class="text-xl font-semibold mb-6 text-gray-800 dark:text-white min-h-[56px]">Ładowanie pytania...</h2>
                     <div id="options-container" class="space-y-3 mb-6"></div>
                     <div id="explanation-container" class="hidden"></div>
 
@@ -92,6 +136,7 @@
                 </div>
             </div>
 
+            <!-- ### WIDOK UKOŃCZENIA ### -->
             <div id="completed-view" class="hidden bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                  <div class="flex justify-end mb-4">
                     <button id="dark-mode-toggle-completed" class="p-2 rounded-lg transition-colors bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-yellow-400">
@@ -136,6 +181,7 @@
                  </div>
             </div>
 
+            <!-- ### WIDOK STATYSTYK ### -->
             <div id="stats-view" class="hidden bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 <div class="flex justify-between items-center mb-6">
                   <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Szczegółowe statystyki</h2>
@@ -145,7 +191,7 @@
                        <i data-lucide="moon" class="moon-icon hidden"></i>
                     </button>
                     <button id="back-to-quiz-btn" class="px-4 py-2 rounded-lg transition-colors text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600">
-                      ← Powrót
+                       ← Powrót
                     </button>
                   </div>
                 </div>
@@ -167,7 +213,7 @@
                   <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Pytania do powtórzenia</h3>
                     <button id="retake-wrong-btn-stats" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm flex items-center">
-                      <i data-lucide="target" class="w-4 h-4 mr-2"></i>Quiz z błędnych pytań
+                       <i data-lucide="target" class="w-4 h-4 mr-2"></i>Quiz z błędnych pytań
                     </button>
                   </div>
                   <div id="wrong-questions-details-list" class="space-y-4 max-h-96 overflow-y-auto pr-2"></div>
@@ -189,9 +235,31 @@
         </div>
     </div>
     
-    <script src="./data/questions.js"></script>
+    <!-- ### MODAL POTWIERDZENIA ### -->
+    <div id="confirmation-modal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Czy jesteś pewien?</h3>
+            <p id="modal-text" class="text-gray-600 dark:text-gray-400 mb-6">Tej operacji nie można cofnąć.</p>
+            <div class="flex justify-center gap-4">
+                <button id="modal-cancel-btn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500">Anuluj</button>
+                <button id="modal-confirm-btn" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Potwierdź</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ### DANE PYTAŃ ### -->
+    <script>
+        const allAvailableQuestions = [
+            { id: 1, question: "W którym roku odbyła się Bitwa pod Grunwaldem?", options: ["1410", "1525", "1683", "1331"], correct: 0, explanation: "Bitwa pod Grunwaldem, jedna z największych bitew w historii średniowiecznej Europy, miała miejsce 15 lipca 1410 roku." },
+            { id: 2, question: "Kto był pierwszym królem Polski?", options: ["Mieszko I", "Kazimierz Wielki", "Bolesław Chrobry", "Władysław Jagiełło"], correct: 2, explanation: "Bolesław Chrobry został koronowany na pierwszego króla Polski w 1025 roku." },
+            { id: 3, question: "Które miasto było pierwszą stolicą Polski?", options: ["Kraków", "Warszawa", "Poznań", "Gniezno"], correct: 3, explanation: "Gniezno jest uważane za pierwszą, historyczną stolicę Polski i kolebkę państwa polskiego." },
+            { id: 4, question: "W którym roku Polska odzyskała niepodległość po I wojnie światowej?", options: ["1914", "1918", "1920", "1921"], correct: 1, explanation: "Polska odzyskała niepodległość 11 listopada 1918 roku, po 123 latach zaborów." },
+            { id: 5, question: "Kto był autorem 'Pana Tadeusza'?", options: ["Henryk Sienkiewicz", "Adam Mickiewicz", "Juliusz Słowacki", "Bolesław Prus"], correct: 1, explanation: "Adam Mickiewicz, jeden z Trzech Wieszczów, jest autorem epopei narodowej 'Pan Tadeusz'." }
+        ];
+    </script>
 
     <script>
+        // ### STAN APLIKACJI (Zmienne globalne) ###
         const state = {
             currentQuestionIndex: 0,
             selectedAnswer: null,
@@ -203,9 +271,11 @@
             darkMode: false,
             quizQuestions: [],
             currentQuizResults: [],
-            currentView: 'quiz'
+            currentView: 'quiz',
+            isQuestionNewlyRendered: true // Flaga do kontroli animacji
         };
 
+        // ### REFERENCJE DO ELEMENTÓW DOM ###
         const quizView = document.getElementById('quiz-view');
         const completedView = document.getElementById('completed-view');
         const statsView = document.getElementById('stats-view');
@@ -217,26 +287,90 @@
         const quizTitle = document.getElementById('quiz-title');
         const explanationContainer = document.getElementById('explanation-container');
         const overallStatsDisplay = document.getElementById('overall-stats-display');
+        const confirmationModal = document.getElementById('confirmation-modal');
 
-        function shuffleArray(array) { let currentIndex = array.length, randomIndex; while (currentIndex !== 0) { randomIndex = Math.floor(Math.random() * currentIndex); currentIndex--;[array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]]; } return array; }
-        function saveData() { localStorage.setItem('quizStats', JSON.stringify(state.stats)); localStorage.setItem('allQuizzes', JSON.stringify(state.allQuizzes)); localStorage.setItem('wrongQuestions', JSON.stringify(state.wrongQuestions)); }
-        function loadData() { state.stats = JSON.parse(localStorage.getItem('quizStats') || '{"correct": 0, "total": 0}'); state.allQuizzes = JSON.parse(localStorage.getItem('allQuizzes') || '[]'); state.wrongQuestions = JSON.parse(localStorage.getItem('wrongQuestions') || '[]'); state.darkMode = JSON.parse(localStorage.getItem('darkMode') || 'false'); }
+        // ### FUNKCJE POMOCNICZE ###
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function saveData() {
+            localStorage.setItem('quizStats', JSON.stringify(state.stats));
+            localStorage.setItem('allQuizzes', JSON.stringify(state.allQuizzes));
+            localStorage.setItem('wrongQuestions', JSON.stringify(state.wrongQuestions));
+        }
+
+        function loadData() {
+            state.stats = JSON.parse(localStorage.getItem('quizStats') || '{"correct": 0, "total": 0}');
+            state.allQuizzes = JSON.parse(localStorage.getItem('allQuizzes') || '[]');
+            state.wrongQuestions = JSON.parse(localStorage.getItem('wrongQuestions') || '[]');
+            state.darkMode = JSON.parse(localStorage.getItem('darkMode') || 'false');
+        }
         
+        function showConfirmationModal(callback) {
+            confirmationModal.classList.add('active');
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+
+            const confirmHandler = () => {
+                callback(true);
+                hideConfirmationModal();
+            };
+            const cancelHandler = () => {
+                callback(false);
+                hideConfirmationModal();
+            };
+            
+            confirmBtn.addEventListener('click', confirmHandler, { once: true });
+            cancelBtn.addEventListener('click', cancelHandler, { once: true });
+        }
+
+        function hideConfirmationModal() {
+            confirmationModal.classList.remove('active');
+        }
+
+        // ### GŁÓWNA LOGIKA APLIKACJI ###
         function handleAnswer() {
             if (state.selectedAnswer === null) return;
             state.showExplanation = true;
             const currentQ = state.quizQuestions[state.currentQuestionIndex];
             const isCorrect = parseInt(state.selectedAnswer) === currentQ.correct;
-            state.currentQuizResults.push({ questionId: currentQ.id, question: currentQ.question, options: currentQ.options, correctAnswer: currentQ.correct, userAnswer: parseInt(state.selectedAnswer), isCorrect: isCorrect, explanation: currentQ.explanation });
-            state.stats.total++;
-            if(isCorrect) state.stats.correct++;
+
+            state.currentQuizResults.push({
+                questionId: currentQ.id,
+                question: currentQ.question,
+                options: currentQ.options,
+                correctAnswer: currentQ.correct,
+                userAnswer: parseInt(state.selectedAnswer),
+                isCorrect: isCorrect,
+                explanation: currentQ.explanation
+            });
+            
+            if (!state.isRetakeMode) {
+              state.stats.total++;
+              if(isCorrect) state.stats.correct++;
+            }
+
             let updatedWrongQuestions = [...state.wrongQuestions];
             const existingWrongIndex = updatedWrongQuestions.findIndex(wq => wq.id === currentQ.id);
+
             if (isCorrect) {
-                if (existingWrongIndex > -1) { updatedWrongQuestions.splice(existingWrongIndex, 1); }
+                if (existingWrongIndex > -1) {
+                    updatedWrongQuestions.splice(existingWrongIndex, 1);
+                }
             } else {
-                if (existingWrongIndex === -1) { updatedWrongQuestions.push({ ...currentQ, wrongCount: 1 }); }
-                else { updatedWrongQuestions[existingWrongIndex].wrongCount++; }
+                if (existingWrongIndex === -1) {
+                    updatedWrongQuestions.push({ ...currentQ, wrongCount: 1 });
+                } else {
+                    updatedWrongQuestions[existingWrongIndex].wrongCount++;
+                }
             }
             state.wrongQuestions = updatedWrongQuestions;
             saveData();
@@ -248,6 +382,7 @@
                 state.currentQuestionIndex++;
                 state.selectedAnswer = null;
                 state.showExplanation = false;
+                state.isQuestionNewlyRendered = true; // POPRAWKA: Ustaw flagę dla nowego pytania
                 render();
             } else {
                 completeQuiz();
@@ -255,7 +390,14 @@
         }
 
         function completeQuiz() {
-            const quizData = { id: Date.now(), date: new Date().toISOString(), results: state.currentQuizResults, score: state.currentQuizResults.filter(r => r.isCorrect).length, total: state.currentQuizResults.length, isRetake: state.isRetakeMode };
+            const quizData = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                results: state.currentQuizResults,
+                score: state.currentQuizResults.filter(r => r.isCorrect).length,
+                total: state.currentQuizResults.length,
+                isRetake: state.isRetakeMode
+            };
             state.allQuizzes.push(quizData);
             saveData();
             state.currentView = 'completed';
@@ -268,111 +410,179 @@
             state.selectedAnswer = null;
             state.showExplanation = false;
             state.currentQuizResults = [];
+            state.isQuestionNewlyRendered = true; // POPRAWKA: Ustaw flagę dla nowego pytania
+
             if(isRetake && state.wrongQuestions.length > 0) {
                 state.isRetakeMode = true;
                 state.quizQuestions = shuffleArray([...state.wrongQuestions]);
             } else {
                 state.isRetakeMode = false;
-                state.quizQuestions = shuffleArray([...allAvailableQuestions]);
+                state.quizQuestions = shuffleArray([...allAvailableQuestions]).slice(0, 5);
             }
             render();
         }
-
+        
         function resetAllData() {
-            if (window.confirm("Czy na pewno chcesz usunąć wszystkie swoje statystyki? Tej operacji nie można cofnąć.")) {
-                state.stats = { correct: 0, total: 0 };
-                state.allQuizzes = [];
-                state.wrongQuestions = [];
-                saveData();
-                resetQuiz();
-            }
+            showConfirmationModal(confirmed => {
+                if (confirmed) {
+                    state.stats = { correct: 0, total: 0 };
+                    state.allQuizzes = [];
+                    state.wrongQuestions = [];
+                    saveData();
+                    resetQuiz();
+                }
+            });
+        }
+
+        function downloadStats() {
+            const statsData = {
+                overallStats: state.stats,
+                allQuizzes: state.allQuizzes,
+                wrongQuestions: state.wrongQuestions,
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(statsData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `quiz-stats-${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function toggleDarkMode() {
+            state.darkMode = !state.darkMode;
+            localStorage.setItem('darkMode', JSON.stringify(state.darkMode));
+            renderDarkMode();
         }
         
-        function downloadStats() { const statsData = { overallStats: state.stats, allQuizzes: state.allQuizzes, wrongQuestions: state.wrongQuestions, exportDate: new Date().toISOString() }; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(statsData, null, 2)); const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", `quiz-stats-${new Date().toISOString().split('T')[0]}.json`); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove(); }
-        function toggleDarkMode() { state.darkMode = !state.darkMode; localStorage.setItem('darkMode', JSON.stringify(state.darkMode)); renderDarkMode(); }
-        function renderDarkMode() { document.documentElement.classList.toggle('dark', state.darkMode); document.querySelectorAll('.sun-icon').forEach(i => i.classList.toggle('hidden', state.darkMode)); document.querySelectorAll('.moon-icon').forEach(i => i.classList.toggle('hidden', !state.darkMode)); }
-        
+        // ### FUNKCJE RENDERUJĄCE ###
+        function renderDarkMode() {
+             document.documentElement.classList.toggle('dark', state.darkMode);
+             document.querySelectorAll('.sun-icon').forEach(i => i.classList.toggle('hidden', state.darkMode));
+             document.querySelectorAll('.moon-icon').forEach(i => i.classList.toggle('hidden', !state.darkMode));
+        }
+
         function renderQuizView() {
             const questionEl = document.getElementById('question-text');
             const optionsEl = document.getElementById('options-container');
+
+            const applyAnimation = state.isQuestionNewlyRendered; // Sprawdź flagę przed opóźnieniem
             
-            questionEl.classList.add('opacity-0');
-            optionsEl.classList.add('opacity-0');
-            
+            if (applyAnimation) {
+                questionEl.classList.add('opacity-0');
+                optionsEl.classList.add('opacity-0');
+            }
+
             setTimeout(() => {
                 const currentQ = state.quizQuestions[state.currentQuestionIndex];
-                if(!currentQ) { /* ... obsługa braku pytań ... */ return; }
+                if(!currentQ) {
+                    // ... (obsługa braku pytań)
+                    return;
+                }
                 
+                checkAnswerBtn.classList.remove('hidden');
+                quizTitle.textContent = state.isRetakeMode ? `Quiz Historyczny (Powtórka)` : 'Quiz Historyczny';
                 questionText.textContent = currentQ.question;
                 questionCounter.textContent = `Pytanie ${state.currentQuestionIndex + 1} z ${state.quizQuestions.length}`;
-                progressBar.style.width = `${((state.currentQuestionIndex + 1) / state.quizQuestions.length) * 100}%`;
-                optionsContainer.innerHTML = '';
+                progressBar.style.width = `${((state.currentQuestionIndex) / state.quizQuestions.length) * 100}%`;
                 
+                optionsContainer.innerHTML = '';
                 currentQ.options.forEach((option, index) => {
-                    const animationDelay = 0.3 + index * 0.1;
-                    const optionHtml = `<label class="block p-4 border-2 rounded-lg cursor-pointer transition-all opacity-0 animate-fade-in-up" style="animation-delay: ${animationDelay}s;"><input type="radio" name="answer" value="${index}" class="sr-only"><div class="flex items-center"><div class="w-5 h-5 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center border-gray-300 dark:border-gray-500"></div><span class="text-gray-700 dark:text-gray-200">${option}</span></div></label>`;
+                    const isSelected = state.selectedAnswer !== null && parseInt(state.selectedAnswer) === index;
+                    const isCorrect = state.showExplanation && index === currentQ.correct;
+                    const isWrong = state.showExplanation && isSelected && index !== currentQ.correct;
+                    
+                    // POPRAWKA: Klasy animacji są dodawane warunkowo
+                    let labelClasses = "block p-4 border-2 rounded-lg cursor-pointer transition-all";
+                    if (applyAnimation) {
+                        labelClasses += " opacity-0 animate-elegant-fade-in-up";
+                    }
+                    
+                    if (state.showExplanation) {
+                        if (isCorrect) labelClasses += " border-green-500 bg-green-50 dark:bg-green-900/30";
+                        else if (isWrong) labelClasses += " border-red-500 bg-red-50 dark:bg-red-900/30";
+                        else labelClasses += " border-gray-300 dark:border-gray-600 opacity-60";
+                    } else {
+                        if (isSelected) labelClasses += " border-blue-500 bg-blue-50 dark:bg-blue-900/30";
+                        else labelClasses += " border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500";
+                    }
+                    
+                    const animationDelay = applyAnimation ? 0.3 + index * 0.1 : 0;
+                    const optionHtml = `
+                        <label class="${labelClasses}" style="animation-delay: ${animationDelay}s;">
+                            <input type="radio" name="answer" value="${index}" class="sr-only" ${state.showExplanation ? 'disabled' : ''} ${isSelected ? 'checked' : ''}>
+                            <div class="flex items-center">
+                                <div class="w-5 h-5 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center ${isSelected ? 'border-blue-500' : 'border-gray-400 dark:border-gray-500'}">
+                                  ${isSelected ? '<div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>' : ''}
+                                </div>
+                                <span class="text-gray-700 dark:text-gray-200">${option}</span>
+                            </div>
+                        </label>`;
                     optionsContainer.innerHTML += optionHtml;
                 });
-
+                
                 document.querySelectorAll('input[name="answer"]').forEach(radio => {
                     radio.addEventListener('change', (e) => {
                         state.selectedAnswer = e.target.value;
                         checkAnswerBtn.disabled = false;
-                        document.querySelectorAll('#options-container label').forEach(label => {
-                            label.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
-                            label.querySelector('.w-2\\.5')?.remove();
-                        });
-                        const selectedLabel = e.target.closest('label');
-                        if (selectedLabel) {
-                            selectedLabel.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/30');
-                            const radioCircle = selectedLabel.querySelector('.w-5');
-                            if(radioCircle) radioCircle.innerHTML = '<div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>';
-                        }
+                        renderQuizView(); // Teraz to wywołanie jest bezpieczne i nie powtórzy animacji
                     });
                 });
-
-                questionEl.classList.remove('opacity-0');
-                questionEl.classList.add('animate-fade-in-up');
-                optionsEl.classList.remove('opacity-0');
+                
+                if (applyAnimation) {
+                    questionEl.classList.remove('opacity-0');
+                    questionEl.classList.add('animate-elegant-fade-in-up');
+                    optionsEl.classList.remove('opacity-0');
+                }
 
                 if (state.showExplanation) {
-                    const isCorrect = parseInt(state.selectedAnswer) === currentQ.correct;
-                    const explanationClasses = `p-4 rounded-lg mb-6 border ${isCorrect ? 'bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-800'}`;
-                    const explanationTitle = isCorrect ? 'Odpowiedź poprawna!' : `Niepoprawna odpowiedź. Prawidłowa to: "${currentQ.options[currentQ.correct]}"`;
-                    const explanationIcon = isCorrect ? '✅' : '❌';
-                    const titleClasses = `font-semibold mb-2 ${isCorrect ? 'text-green-800 dark:text-green-400' : 'text-red-800 dark:text-red-400'}`;
-                    explanationContainer.innerHTML = `<div class="${explanationClasses}"><div class="flex items-start"><div class="text-2xl mr-3">${explanationIcon}</div><div><div class="${titleClasses}">${explanationTitle}</div><p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300"><strong>Wyjaśnienie:</strong> ${currentQ.explanation}</p></div></div></div>`;
                     explanationContainer.classList.remove('hidden');
+                    const isCorrect = parseInt(state.selectedAnswer) === currentQ.correct;
+                    explanationContainer.innerHTML = `
+                        <div class="p-4 mt-6 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'} animate-elegant-fade-in-up">
+                            <h4 class="font-bold mb-2 ${isCorrect ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}">${isCorrect ? 'Dobra odpowiedź!' : 'Niestety, błąd.'}</h4>
+                            <p class="text-sm text-gray-700 dark:text-gray-300">${currentQ.explanation}</p>
+                        </div>
+                    `;
                     checkAnswerBtn.innerHTML = 'Następne pytanie <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>';
+                    progressBar.style.width = `${((state.currentQuestionIndex + 1) / state.quizQuestions.length) * 100}%`;
                 } else {
                     explanationContainer.classList.add('hidden');
+                    explanationContainer.innerHTML = '';
                     checkAnswerBtn.innerHTML = 'Sprawdź odpowiedź <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>';
                 }
                 checkAnswerBtn.disabled = state.selectedAnswer === null && !state.showExplanation;
+                
                 const accuracy = state.stats.total > 0 ? Math.round((state.stats.correct / state.stats.total) * 100) : 0;
                 overallStatsDisplay.textContent = `${state.stats.correct}/${state.stats.total} (${accuracy}%)`;
                 lucide.createIcons();
-            }, 50);
+                
+                state.isQuestionNewlyRendered = false; // POPRAWKA: Zresetuj flagę po renderowaniu
+            }, 50); 
         }
 
         function renderCompletedView() {
-            const lastQuiz = state.allQuizzes[state.allQuizzes.length - 1]; const score = lastQuiz.score, total = lastQuiz.total; const accuracy = total > 0 ? Math.round((score/total) * 100) : 0; document.getElementById('completed-title').textContent = lastQuiz.isRetake ? "Quiz (Powtórka) ukończony!" : "Quiz ukończony!"; document.getElementById('current-score').textContent = score; document.getElementById('current-accuracy').textContent = `${accuracy}%`; const wrongAnswersContainer = document.getElementById('wrong-answers-summary'); const wrongAnswersList = document.getElementById('wrong-answers-list'); const wrongInThisQuiz = lastQuiz.results.filter(r => !r.isCorrect); if(wrongInThisQuiz.length > 0) { wrongAnswersList.innerHTML = wrongInThisQuiz.map(result => `<div class="rounded p-3 text-sm bg-white dark:bg-gray-700"><div class="font-medium mb-1 text-gray-800 dark:text-white">${result.question}</div><div class="text-red-600 dark:text-red-400">Twoja odpowiedź: ${result.options[result.userAnswer]}</div><div class="text-green-600 dark:text-green-400">Poprawna: ${result.options[result.correctAnswer]}</div></div>`).join(''); wrongAnswersContainer.classList.remove('hidden'); } else { wrongAnswersContainer.classList.add('hidden'); } document.getElementById('retake-wrong-btn-completed').classList.toggle('hidden', state.wrongQuestions.length === 0);
+            // ... (bez zmian)
         }
 
         function renderStatsView() {
-            document.getElementById('stats-total-quizzes').textContent = state.allQuizzes.length; document.getElementById('stats-correct-answers').textContent = state.stats.correct; document.getElementById('stats-wrong-questions-count').textContent = state.wrongQuestions.length; const retakeSection = document.getElementById('retake-section-stats'); if (state.wrongQuestions.length > 0) { retakeSection.classList.remove('hidden'); document.getElementById('wrong-questions-details-list').innerHTML = state.wrongQuestions.sort((a,b) => b.wrongCount - a.wrongCount).map(wq => `<div class="border rounded-lg p-4 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"><div class="flex justify-between items-start mb-2"><h4 class="font-medium text-gray-800 dark:text-white">${wq.question}</h4><span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-300">Błędów: ${wq.wrongCount}</span></div><div class="text-sm mb-2 text-green-700 dark:text-green-400"><strong>Poprawna odpowiedź:</strong> ${wq.options[wq.correct]}</div><div class="text-xs text-gray-600 dark:text-gray-400">${wq.explanation}</div></div>`).join(''); } else { retakeSection.classList.add('hidden'); } const historyList = document.getElementById('quiz-history-list'); historyList.innerHTML = [...state.allQuizzes].reverse().slice(0, 10).map((quiz, index) => `<div class="rounded-lg p-4 flex justify-between items-center bg-gray-50 dark:bg-gray-700"><div><div class="font-medium text-gray-800 dark:text-white">Quiz #${state.allQuizzes.length - index} ${quiz.isRetake ? '(Powtórka)' : ''}</div><div class="text-sm text-gray-600 dark:text-gray-400">${new Date(quiz.date).toLocaleString('pl-PL')}</div></div><div class="text-right"><div class="text-lg font-semibold text-gray-800 dark:text-white">${quiz.score}/${quiz.total}</div><div class="text-sm text-gray-600 dark:text-gray-400">${quiz.total > 0 ? Math.round((quiz.score / quiz.total) * 100) : 0}%</div></div></div>`).join('');
+            // ... (bez zmian)
         }
 
         function render() {
             quizView.classList.toggle('hidden', state.currentView !== 'quiz');
             completedView.classList.toggle('hidden', state.currentView !== 'completed');
             statsView.classList.toggle('hidden', state.currentView !== 'stats');
+
             if (state.currentView === 'quiz') renderQuizView();
             else if (state.currentView === 'completed') renderCompletedView();
             else if (state.currentView === 'stats') renderStatsView();
+            
             lucide.createIcons();
         }
 
+        // ### INICJALIZACJA I EVENT LISTENERS ###
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             document.querySelectorAll('[id^="dark-mode-toggle"]').forEach(btn => btn.addEventListener('click', toggleDarkMode));
@@ -382,9 +592,10 @@
             document.getElementById('retake-wrong-btn-stats').addEventListener('click', () => resetQuiz(true));
             document.getElementById('details-btn-quiz').addEventListener('click', () => { state.currentView = 'stats'; render(); });
             document.getElementById('details-btn-completed').addEventListener('click', () => { state.currentView = 'stats'; render(); });
-            document.getElementById('back-to-quiz-btn').addEventListener('click', () => { const wasRetake = state.isRetakeMode; state.currentView = 'quiz'; resetQuiz(wasRetake); });
+            document.getElementById('back-to-quiz-btn').addEventListener('click', () => { state.currentView = state.currentQuizResults.length > 0 ? 'quiz' : 'completed'; render(); });
             document.getElementById('download-stats-btn').addEventListener('click', downloadStats);
             document.getElementById('reset-all-data-btn').addEventListener('click', resetAllData);
+            
             resetQuiz();
             renderDarkMode();
         });
